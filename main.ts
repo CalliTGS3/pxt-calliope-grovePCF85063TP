@@ -10,6 +10,21 @@
  * @author Raik Andritschke
  */
 
+enum DateTime_Format {
+    //% block="DD"
+    DateTime_Date,
+    //% block="MM"
+    DateTime_Month,
+    //% block="YYYY"
+    DateTime_Year,
+    //% block="HH24"
+    DateTime_Hour,
+    //% block="MI"
+    DateTime_Min,
+    //% block="SS"
+    DateTime_Sec
+}
+
 //% weight=100 color=#0fbc11 icon=""
 namespace PCF85063TP {
     let PCF85063TP_ADDR = 0x51;
@@ -109,6 +124,33 @@ namespace PCF85063TP {
         let timestr = leadingZero(day.toString(), 2) + "." +
             leadingZero(month.toString(), 2) + "." +
             leadingZero(year.toString(), 4)
+        return timestr;
+    }
+
+    //% blockId="getDateTimePart" block="Lese Teil von DatumZeit Anteil %part"
+    export function getDateTimePart(part: DateTime_Format): string {
+        getClock();
+        let timestr = '';
+        switch (part) {
+            case DateTime_Format.DateTime_Date:
+                timestr = leadingZero(day.toString(), 2);
+                break;
+            case DateTime_Format.DateTime_Month:
+                timestr = leadingZero(month.toString(), 2);
+                break;
+            case DateTime_Format.DateTime_Year:
+                timestr = leadingZero(year.toString(), 4)
+                break;
+            case DateTime_Format.DateTime_Hour:
+                timestr = leadingZero(hours.toString(), 2)
+                break;
+            case DateTime_Format.DateTime_Min:
+                timestr = leadingZero(minutes.toString(), 2)
+                break;
+            case DateTime_Format.DateTime_Sec:
+                timestr = leadingZero(seconds.toString(), 2)
+                break;
+        }
         return timestr;
     }
 
