@@ -24,7 +24,9 @@ enum DateTime_Format {
     //% block="SS"
     DateTime_Sec,
     //% block="DAY"
-    DateTime_Day
+    DateTime_Day,
+    //% block="WEEKDAY"
+    DateTime_WeekDay
 }
 
 //% weight=10 color=#2874a6  icon="\uf017"
@@ -164,6 +166,9 @@ namespace PCF85063TP {
                 timestr = leadingZero(seconds.toString(), 2)
                 break;
             case DateTime_Format.DateTime_Day:
+                timestr = weekday.toString()
+                break;
+            case DateTime_Format.DateTime_WeekDay:
                 timestr = weekday_str
                 break;
         }
