@@ -22,7 +22,9 @@ enum DateTime_Format {
     //% block="MI"
     DateTime_Min,
     //% block="SS"
-    DateTime_Sec
+    DateTime_Sec,
+    //% block="DAY"
+    DateTime_Day
 }
 
 //% weight=10 color=#2874a6  icon="\uf017"
@@ -160,6 +162,9 @@ namespace PCF85063TP {
                 break;
             case DateTime_Format.DateTime_Sec:
                 timestr = leadingZero(seconds.toString(), 2)
+                break;
+            case DateTime_Format.DateTime_Day:
+                timestr = weekday_str
                 break;
         }
         return timestr;
