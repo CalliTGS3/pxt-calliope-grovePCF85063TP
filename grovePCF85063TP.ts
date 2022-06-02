@@ -52,6 +52,10 @@ namespace PCF85063TP {
     let seconds = 0;
     let rtcModule = 0;
 
+    const MinuteEventID = 3101;
+    let InGetClock = false;
+    let LastMinutes = 0;
+
     function DECtoBCD(n: number): number {
         //return (n / 10 * 16) + (n % 10);
 	let s = n.toString();
@@ -73,48 +77,52 @@ namespace PCF85063TP {
 
     // 
     function getClock() {
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        seconds = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        minutes = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        hours = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        day = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        weekday = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        month = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
-        year = BCDtoDEC(rtcModule)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-        switch (weekday) {
-            case 0:
-                weekday_str = "Sonntag";
-                break;
-            case 1:
-                weekday_str = "Montag";
-                break;
-            case 2:
-                weekday_str = "Dienstag";
-                break;
-            case 3:
-                weekday_str = "Mittwoch";
-                break;
-            case 4:
-                weekday_str = "Donnerstag";
-                break;
-            case 5:
-                weekday_str = "Freitag";
-                break;
-            case 6:
-                weekday_str = "Samstag";
-                break;
+        if (!InGetClock) {
+            InGetClock = true;
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            seconds = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            minutes = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            hours = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            day = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            weekday = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            month = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            year = BCDtoDEC(rtcModule)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+            switch (weekday) {
+                case 0:
+                    weekday_str = "Sonntag";
+                    break;
+                case 1:
+                    weekday_str = "Montag";
+                    break;
+                case 2:
+                    weekday_str = "Dienstag";
+                    break;
+                case 3:
+                    weekday_str = "Mittwoch";
+                    break;
+                case 4:
+                    weekday_str = "Donnerstag";
+                    break;
+                case 5:
+                    weekday_str = "Freitag";
+                    break;
+                case 6:
+                    weekday_str = "Samstag";
+                    break;
+            }
+            year = 2000 + year;
+        InGetClock = false;
         }
-        year = 2000 + year;
     }
 
     function leadingZero(s: string, len: number) {
@@ -142,7 +150,40 @@ namespace PCF85063TP {
         return timestr;
     }
 
-    //% blockId="getDateTimePart" block="Lese Teil von DatumZeit Anteil %part"
+    //% blockId="getDateTimePartNum" block="Lese Teil von DatumZeit Anteil %part als Zahl"
+    export function getDateTimePartNum(part: DateTime_Format): number {
+        getClock();
+        let timenum = 0;
+        switch (part) {
+            case DateTime_Format.DateTime_Date:
+                timenum = day
+                break;
+            case DateTime_Format.DateTime_Month:
+                timenum = month
+                break;
+            case DateTime_Format.DateTime_Year:
+                timenum = year
+                break;
+            case DateTime_Format.DateTime_Hour:
+                timenum = hours
+                break;
+            case DateTime_Format.DateTime_Min:
+                timenum = minutes
+                break;
+            case DateTime_Format.DateTime_Sec:
+                timenum = seconds
+                break;
+            case DateTime_Format.DateTime_Day:
+                timenum = weekday
+                break;
+            case DateTime_Format.DateTime_WeekDay:
+                timenum = weekday
+                break;
+        }
+        return timenum;
+    }
+
+    //% blockId="getDateTimePart" block="Lese Teil von DatumZeit Anteil %part als Text"
     export function getDateTimePart(part: DateTime_Format): string {
         getClock();
         let timestr = '';
@@ -199,4 +240,21 @@ namespace PCF85063TP {
         pins.i2cWriteNumber(PCF85063TP_ADDR, CTRL_START, NumberFormat.UInt16BE) // control 1 start
     }
 
+    //% blockId=onMinuteEvent block="zu jeder vollen Minute"
+    export function onMinuteEvent(handler: () => void) {
+        control.onEvent(MinuteEventID, EventBusValue.MICROBIT_EVT_ANY, handler);
+        control.inBackground(() => {
+            while (true) {
+                getClock()
+                if ((minutes > LastMinutes) && (seconds == 0)) {  
+                    LastMinutes = minutes;
+                    if (LastMinutes == 59) { 
+                        LastMinutes = -1
+                    }
+                    control.raiseEvent(MinuteEventID, 0);
+                }
+                basic.pause(500);
+            }
+        })
+    }
 }
