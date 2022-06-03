@@ -252,6 +252,7 @@ namespace PCF85063TP {
                         LastMinutes = -1
                     }
                     control.raiseEvent(MinuteEventID, 0);
+	            basic.pause(500);
                 }
                 basic.pause(500);
             }
