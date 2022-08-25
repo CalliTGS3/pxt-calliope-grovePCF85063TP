@@ -8,6 +8,9 @@
  * SPEC: www.nxp.com/docs/en/data-sheet/PCF85063TP.pdf
  * 
  * @author Raik Andritschke
+ *
+ * INT and CLK funtions copied from PCF85063 extension by Marcel André
+ *
  */
 
 enum DateTime_Format {
@@ -29,9 +32,38 @@ enum DateTime_Format {
     DateTime_WeekDay
 }
 
+enum CLK_Type {
+    //% block="32768 Hz"
+    CLK_32768,
+    //% block="16384 Hz"
+    CLK_16384,
+    //% block="8192 Hz"
+    CLK_8192,
+    //% block="4096 Hz"
+    CLK_4096,
+    //% block="2048 Hz"
+    CLK_2048,
+    //% block="1024 Hz"
+    CLK_1024,
+    //% block="1 Hz"
+    CLK_1,
+    //% block="Off"
+    CLK_Off
+}
+
+enum INT_Type {
+    //% block="60 sec"
+    INT_60,
+    //% block="30 sec"
+    INT_30,
+    //% block="Off"
+    INT_Off
+}
+
 //% weight=10 color=#2874a6  icon="\uf017"
 namespace PCF85063TP {
     let PCF85063TP_ADDR = 0x51;
+    
     const CTRL_YEAR = 0x0A;
     const CTRL_MONTH = 0x09;
     const CTRL_WEEKDAY = 0x08;
@@ -42,6 +74,7 @@ namespace PCF85063TP {
     const CTRL_CONTROL = 0x00;
     const CTRL_STOP = 0x0021;
     const CTRL_START = 0x0001;
+	
     let year = 0;
     let month = 0;
     let weekday = 0;
@@ -51,6 +84,10 @@ namespace PCF85063TP {
     let minutes = 0;
     let seconds = 0;
     let rtcModule = 0;
+    let ctrl_reg0 = 0;                          // Content Control Register 0
+    let ctrl_reg1 = 0;                          // Content Control Register 1
+    let mask = 0b00000000;
+    let new_reg = 0b00000000;
 
     const MinuteEventID = 3101;
     let InGetClock = false;
@@ -258,4 +295,58 @@ namespace PCF85063TP {
             }
         })
     }
+
+    function getControlRegisters() {
+        // skip clock registers
+        for (let i = 1; i <= 9; i++) {
+             rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+        }
+
+        // Read Control Registers
+        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+        ctrl_reg0 = rtcModule
+
+        rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+        ctrl_reg1 = rtcModule
+    }
+
+    //% blockId="setClk" block="Setze CLK Ausgangsfrequenz %clk"
+    //% group="Advanced"
+    export function setClk(clk: CLK_Type) {
+        getControlRegisters();
+        mask = 0b11111000;
+        new_reg = ctrl_reg1 & mask; // delete last 3 bits
+        switch (clk) {
+            case CLK_Type.CLK_32768:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 0, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_16384:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 1, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_8192:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 2, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_4096:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 3, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_2048:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 4, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_1024:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 5, NumberFormat.UInt16BE);
+                break;
+             case CLK_Type.CLK_1:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 6, NumberFormat.UInt16BE);
+                break;
+            case CLK_Type.CLK_Off:
+                pins.i2cWriteNumber(PCF85063TP_ADDR, (1 << 8) + new_reg + 7, NumberFormat.UInt16BE);
+                break;
+        }
+
+        // Perform 11-1 / 18-1 read operations to get pointer back to correct position
+        for (let i = 1; i <= 10; i++) {
+            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
+        }
+    }
+
 }
