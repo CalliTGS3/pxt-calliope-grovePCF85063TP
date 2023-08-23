@@ -9,7 +9,8 @@
  * 
  * @author Raik Andritschke
  *
- * INT and CLK funtions copied from PCF85063 extension by Marcel André
+ * INT and CLK functions copied from PCF85063 extension by Marcel André
+ * I2C functions read from absolute addresses and all bytes one at a time, separated by date and time
  *
  */
 
@@ -73,7 +74,9 @@ namespace PCF85063TP {
     const CTRL_SECONDS = 0x04;
     const CTRL_CONTROL = 0x00;
     const CTRL_STOP = 0x0021;
-    const CTRL_START = 0x0001;
+    const CTRL_START = 0x0001;	
+    const DATE_BYTES = 4;
+    const TIME_BYTES = 3;
 	
     let year = 0;
     let month = 0;
@@ -113,27 +116,34 @@ namespace PCF85063TP {
     }
 
     // 
-    function getClock() {
+    function getClockTime() {
         if (!InGetClock) {
             InGetClock = true;
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            pins.i2cWriteNumber(PCF85063TP_ADDR, CTRL_SECONDS, NumberFormat.UInt8BE,true)
+            let buf = pins.i2cReadBuffer(PCF85063TP_ADDR, TIME_BYTES)
+            rtcModule = buf.getUint8(0) & 0x7F
             seconds = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            rtcModule = buf.getUint8(1)
             minutes = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            rtcModule = buf.getUint8(2)
             hours = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+        InGetClock = false;
+        }
+    }
+
+    function getClockDate() {
+        if (!InGetClock) {
+            InGetClock = true;
+            pins.i2cWriteNumber(PCF85063TP_ADDR, CTRL_DAY, NumberFormat.UInt8BE,true)            
+            let buf = pins.i2cReadBuffer(PCF85063TP_ADDR, DATE_BYTES)
+            rtcModule = buf.getUint8(0)
             day = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            rtcModule = buf.getUint8(1)
             weekday = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            rtcModule = buf.getUint8(2)
             month = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE) % 256
+            rtcModule = buf.getUint8(3)
             year = BCDtoDEC(rtcModule)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
-            rtcModule = pins.i2cReadNumber(PCF85063TP_ADDR, NumberFormat.UInt16BE)
             switch (weekday) {
                 case 0:
                     weekday_str = "Sonntag";
@@ -171,7 +181,7 @@ namespace PCF85063TP {
 
     //% blockId="getTime" block="Lese Uhrzeit"
     export function getTime(): string {
-        getClock();
+        getClockTime();
         let datestr = leadingZero(hours.toString(), 2) + ":" +
             leadingZero(minutes.toString(), 2) + ":" +
             leadingZero(seconds.toString(), 2)
@@ -180,7 +190,7 @@ namespace PCF85063TP {
 
     //% blockId="getDate" block="Lese Datum"
     export function getDate(): string {
-        getClock();
+        getClockDate();
         let timestr = leadingZero(day.toString(), 2) + "." +
             leadingZero(month.toString(), 2) + "." +
             leadingZero(year.toString(), 4)
@@ -189,7 +199,8 @@ namespace PCF85063TP {
 
     //% blockId="getDateTimePartNum" block="Lese Teil von DatumZeit Anteil %part als Zahl"
     export function getDateTimePartNum(part: DateTime_Format): number {
-        getClock();
+        getClockTime();
+        getClockDate();
         let timenum = 0;
         switch (part) {
             case DateTime_Format.DateTime_Date:
@@ -222,7 +233,8 @@ namespace PCF85063TP {
 
     //% blockId="getDateTimePart" block="Lese Teil von DatumZeit Anteil %part als Text"
     export function getDateTimePart(part: DateTime_Format): string {
-        getClock();
+        getClockTime();
+        getClockDate();
         let timestr = '';
         switch (part) {
             case DateTime_Format.DateTime_Date:
@@ -282,7 +294,7 @@ namespace PCF85063TP {
         control.onEvent(MinuteEventID, EventBusValue.MICROBIT_EVT_ANY, handler);
         control.inBackground(() => {
             while (true) {
-                getClock()
+                getClockTime()
                 if ((minutes > LastMinutes) && (seconds == 0)) {  
                     LastMinutes = minutes;
                     if (LastMinutes == 59) { 
